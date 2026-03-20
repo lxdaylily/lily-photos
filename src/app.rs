@@ -32,6 +32,7 @@ pub fn build_app() -> Router {
         .route_service("/favicon.ico", ServeFile::new("./static/favicon.ico"))
         .nest_service("/images", ServeDir::new("./static/images"))
         .nest_service("/css", ServeDir::new("./static/css"))
+        .nest_service("/js", ServeDir::new("./static/js"))
 }
 
 fn render_index() -> String {

@@ -2,8 +2,12 @@ current_identity = "Temp Page"
 avatar_url = "/images/avatar.webp"
 bg_url = "/images/bg.webp"
 team_members = ["User_1", "User_2"]
-site_version = "0.1.0-alpha"
+site_version = "0.1.0-beta"
 intro = "template."
+
+[tls]
+# cert_path = "./certs/example.com.pem"
+# key_path  = "./certs/example.com.key"
 
 [[items]]
 icon_url = "/images/default_icon.webp"

@@ -1,4 +1,5 @@
-use crate::model::{AboutList, HomeProfile, ProjectList};
+use crate::model::{AboutList, HomeProfile, ProjectList, TlsConfig};
+use serde::Deserialize;
 use std::fs;
 
 pub fn load_profile() -> HomeProfile {
@@ -52,3 +53,11 @@ pub fn load_about_items() -> AboutList {
     }
 }
 
+pub fn load_tls_config() -> Option<TlsConfig> {
+    let content = fs::read_to_string("config.toml").ok()?;
+    // 将整个文件解析为 toml::Value，以便提取 [tls] 节
+    let value: toml::Value = toml::from_str(&content).ok()?;
+    let tls_value = value.get("tls")?;
+    // 将 tls 节反序列化为 TlsConfig
+    TlsConfig::deserialize(tls_value.clone()).ok()
+}

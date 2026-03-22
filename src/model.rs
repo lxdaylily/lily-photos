@@ -5,7 +5,7 @@ pub struct HomeProfile {
     pub current_identity: String,  // 比如 "Home Page"
     pub avatar_url: String,        // 头像地址
     pub bg_url: String,            // 背景图地址
-    pub team_members: Vec<String>, // ["Suly", "chixiaoshu"]
+    pub team_members: Vec<String>, // ["User_1", "User_2"]
     pub site_version: String,      // 版本号
     pub intro: String,             // 自我介绍
 }
@@ -19,12 +19,12 @@ pub struct HealthResponse {
 impl Default for HomeProfile {
     fn default() -> Self {
         Self {
-            current_identity: "Home Page - Default".to_string(),
+            current_identity: "Default".to_string(),
             avatar_url: "/images/avatar.webp".to_string(),
             bg_url: "/images/bg.png".to_string(),
-            team_members: vec!["Suly".into(), "chixiaoshu".into(), "Azureus".into()],
-            site_version: "0.1.0-alpha".to_string(),
-            intro: "Hi, 这里是 梨。\n欢迎下滑探索我的项目～".to_string(),
+            team_members: vec!["User_1".into(), "User_2".into(), "User_3".into()],
+            site_version: "default".to_string(),
+            intro: "Hi！\n欢迎下滑探索我的项目～".to_string(),
         }
     }
 }
@@ -56,8 +56,8 @@ impl Default for ProjectList {
         Self {
             items: vec![Project {
                 name: "更多项目".into(),
-                desc: "探索我的 GitHub 获取更多有趣的工具。".into(),
-                url: "https://github.com/chixiaoshu".into(),
+                desc: "探索".into(),
+                url: "https://github.com/".into(),
             }],
         }
     }
@@ -80,9 +80,15 @@ impl Default for AboutList {
         Self {
             items: vec![AboutItem {
                 icon_url: "/images/default_icon.webp".into(),
-                title: "Waiting for ?".into(),
+                title: "Template".into(),
                 content: "default.".into(),
             }],
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TlsConfig {
+    pub cert_path: String,
+    pub key_path: String,
 }

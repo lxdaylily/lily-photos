@@ -40,9 +40,13 @@ lily-nest/
 │       └── mod.rs
 ├── static/             # 静态资源
 │   ├── css/MD3.css     # Material 3 风格 CSS
+│   ├── js/index.js     # Index.html所需的 JS
 │   └── images/         # 图片资源
 ├── templates/
 │   └── index.html      # 首页模板
+├── certs/
+│   └── example.com.pem # SSL证书
+│   └── example.com.key # SSL密钥
 └── ...
 ```
 
@@ -53,7 +57,8 @@ lily-nest/
    ```bash
    cargo run
    ```
-4. 访问 [http://localhost:8880](http://localhost:8880)
+4. 无证书访问 [http://[::1]:8880](http://[::1]:8880)
+5. 有证书访问 [https://[::1]:8443](https://[::1]:8443)
 
 ## 配置说明
 - `config.toml`：站点基础信息、团队成员、关于我等

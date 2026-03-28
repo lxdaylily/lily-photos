@@ -464,3 +464,109 @@ fn normalize_tags(raw: &str) -> Vec<String> {
         .map(|tag| tag.chars().take(24).collect::<String>())
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use axum::{
+        body::{Body, to_bytes},
+        http::{Request, StatusCode, header},
+    };
+    use tower::ServiceExt;
+
+    use crate::{app::build_app, auth::AuthState, db::Database};
+
+    fn temp_db_path() -> std::path::PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+
+        std::env::temp_dir().join(format!("lily-nest-api-{nanos}.sqlite3"))
+    }
+
+    #[tokio::test]
+    async fn requires_password_setup_on_first_launch() {
+        let db = Database::new(temp_db_path()).await.unwrap();
+        let auth = AuthState::new(None);
+
+        let response = build_app(db, auth)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/auth/status")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(payload["authenticated"], false);
+        assert_eq!(payload["setup_required"], true);
+    }
+
+    #[tokio::test]
+    async fn first_setup_persists_admin_password_and_logs_in() {
+        let db = Database::new(temp_db_path()).await.unwrap();
+        let auth = AuthState::new(None);
+        let app = build_app(db.clone(), auth);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/auth/setup")
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(
+                        r#"{"password":"secret123","confirm_password":"secret123"}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let set_cookie = response
+            .headers()
+            .get(header::SET_COOKIE)
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        assert!(set_cookie.starts_with("lily_nest_session="));
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(payload["authenticated"], true);
+        assert_eq!(payload["setup_required"], false);
+        assert_eq!(
+            db.get_admin_password().await.unwrap(),
+            Some("secret123".to_string())
+        );
+
+        let cookie = set_cookie.split(';').next().unwrap().to_string();
+        let response = build_app(db, AuthState::new(Some("secret123".to_string())))
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/auth/status")
+                    .header(header::COOKIE, cookie)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(payload["authenticated"], false);
+        assert_eq!(payload["setup_required"], false);
+    }
+}

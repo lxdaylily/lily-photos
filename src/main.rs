@@ -22,6 +22,7 @@ async fn main() {
         .get_admin_password()
         .await
         .expect("读取管理员口令失败");
+    let setup_required = admin_password.is_none();
     let auth = auth::AuthState::new(admin_password);
     let app = app::build_app(db, auth);
 
@@ -32,6 +33,7 @@ async fn main() {
         let addr: SocketAddr = "[::]:8443".parse().expect("解析地址失败");
         println!(">> 梨窝相册 已启动: https://{}", addr);
         println!(">> SQLite 数据库: {}", db_path.display());
+        print_admin_status(setup_required);
 
         axum_server::bind_rustls(addr, config)
             .serve(app.into_make_service())
@@ -48,7 +50,7 @@ async fn main() {
 
     println!(">> 梨窝相册 已启动: {}", open_url);
     println!(">> SQLite 数据库: {}", db_path.display());
-    println!(">> 首次启动请在页面里设置管理员口令");
+    print_admin_status(setup_required);
     try_open_browser(&open_url);
 
     axum::serve(listener, app).await.expect("Server error");
@@ -101,4 +103,12 @@ fn try_open_browser(url: &str) {
 
     #[cfg(all(unix, not(target_os = "macos")))]
     let _ = Command::new("xdg-open").arg(url).spawn();
+}
+
+fn print_admin_status(setup_required: bool) {
+    if setup_required {
+        println!(">> 首次启动请在页面里设置管理员口令");
+    } else {
+        println!(">> 管理员口令已配置，可直接在页面登录");
+    }
 }

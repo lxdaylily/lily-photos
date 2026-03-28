@@ -1,94 +1,95 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct HomeProfile {
-    pub current_identity: String,  // 比如 "Home Page"
-    pub avatar_url: String,        // 头像地址
-    pub bg_url: String,            // 背景图地址
-    pub team_members: Vec<String>, // ["User_1", "User_2"]
-    pub site_version: String,      // 版本号
-    pub intro: String,             // 自我介绍
-}
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct HealthResponse {
-    pub status: &'static str,  // "ok"
-    pub version: &'static str, // env!("CARGO_PKG_VERSION")
+    pub status: &'static str,
+    pub version: &'static str,
 }
 
-impl Default for HomeProfile {
-    fn default() -> Self {
-        Self {
-            current_identity: "Default".to_string(),
-            avatar_url: "/images/avatar.webp".to_string(),
-            bg_url: "/images/bg.png".to_string(),
-            team_members: vec!["User_1".into(), "User_2".into(), "User_3".into()],
-            site_version: "default".to_string(),
-            intro: "Hi！\n欢迎下滑探索我的项目～".to_string(),
-        }
-    }
-}
-
-impl Default for HealthResponse {
-    fn default() -> Self {
-        Self {
-            status: "ok",
-            version: "CARGO_PKG_VERSION",
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Project {
-    pub name: String,
-    pub desc: String,
-    pub url: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ProjectList {
-    pub items: Vec<Project>,
-}
-
-// 为 ProjectList 实现 Default
-impl Default for ProjectList {
-    fn default() -> Self {
-        Self {
-            items: vec![Project {
-                name: "更多项目".into(),
-                desc: "探索".into(),
-                url: "https://github.com/".into(),
-            }],
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AboutItem {
-    pub icon_url: String,
+#[derive(Debug, Clone)]
+pub struct NewPhoto {
     pub title: String,
-    pub content: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub filename: Option<String>,
+    pub mime_type: String,
+    pub data: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct AboutList {
-    pub items: Vec<AboutItem>,
+#[derive(Debug, Clone)]
+pub struct PhotoRecord {
+    pub id: i64,
+    pub title: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub filename: Option<String>,
+    pub mime_type: String,
+    pub data: Vec<u8>,
+    pub created_at: String,
 }
 
-impl Default for AboutList {
-    fn default() -> Self {
-        Self {
-            items: vec![AboutItem {
-                icon_url: "/images/default_icon.webp".into(),
-                title: "Template".into(),
-                content: "default.".into(),
-            }],
-        }
-    }
+#[derive(Debug, Serialize)]
+pub struct PhotoSummary {
+    pub id: i64,
+    pub title: String,
+    pub description: String,
+    pub tags: Vec<String>,
+    pub filename: Option<String>,
+    pub mime_type: String,
+    pub created_at: String,
+    pub byte_size: usize,
+    pub content_url: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TlsConfig {
-    pub cert_path: String,
-    pub key_path: String,
+#[derive(Debug, Serialize)]
+pub struct UploadPhotoResponse {
+    pub items: Vec<UploadedPhotoItem>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ApiErrorResponse {
+    pub error: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UploadedPhotoItem {
+    pub id: i64,
+    pub title: String,
+    pub content_url: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DeletePhotoResponse {
+    pub id: i64,
+    pub deleted: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoginRequest {
+    pub password: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SetupPasswordRequest {
+    pub password: String,
+    pub confirm_password: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AuthStatusResponse {
+    pub authenticated: bool,
+    pub setup_required: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdatePhotoRequest {
+    pub title: String,
+    pub description: String,
+    pub tags: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdatePhotoResponse {
+    pub item: PhotoSummary,
 }

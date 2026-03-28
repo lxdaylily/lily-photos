@@ -1,74 +1,179 @@
-# 梨窝（lily-nest）
+# Lily Nest / 梨窝相册
 
-> 梨梨的个人网站：项目展示、博客与技术分享
+`lily-nest` 是一个基于 Rust、Axum 和 SQLite 的本地相册应用。它把前端页面、样式和脚本直接嵌入可执行文件，启动后即可在浏览器中使用；上传的图片会经过压缩处理后写入 SQLite 数据库，不依赖额外的静态文件目录。
 
-## 项目预览
-- www.sulyhub.cn
+这个仓库目前的实际代码已经不是“个人主页 / 项目展示站”，而是一个单机相册程序。下面的说明基于当前源码重新整理。
 
-## 项目简介
-梨窝是一个基于 Rust + Axum 的个人主页/作品集网站，支持项目动态加载、团队成员展示、主题切换等功能，界面采用 Material You 风格，支持响应式设计。
+## 功能概览
+
+- 首次启动时在页面内设置管理员口令
+- 通过 Cookie 进行管理登录 / 退出
+- 支持多图上传
+- 上传时自动缩放和 JPEG 压缩，减小数据库体积
+- 照片、标题、描述、标签统一存入 SQLite
+- 按日期时间线展示照片
+- 支持编辑标题、描述、标签
+- 支持删除照片
+- 内置浅色 / 深色 / 跟随系统主题
+- 前端资源内嵌，无需额外前端构建步骤
+- 支持 macOS `.app` 打包和 Windows 交叉编译脚本
 
 ## 技术栈
-- Rust 2024
-- [Axum](https://github.com/tokio-rs/axum) Web 框架
-- Tokio 异步运行时
-- Serde/TOML 配置
-- Tower HTTP 静态资源服务
-- 前端：Tailwind CSS（CDN）、自定义 Material 3 风格 CSS
 
-## 主要功能
-- 首页动态渲染（项目、团队成员、关于我）
-- 配置文件驱动（config.toml、projects.toml）
-- RESTful API（/api/v1/health, /api/v1/home/profile）
-- 静态资源服务（图片、CSS、robots.txt、sitemap.xml 等）
-- 主题切换（浅色/深色/跟随系统）
-- 健康检查接口
+- Rust 2024
+- Axum 0.8
+- Tokio
+- Rusqlite + SQLite
+- image
+- 原生 HTML / CSS / JavaScript（通过 `include_str!` / `include_bytes!` 内嵌）
+
+## 运行方式
+
+### 开发运行
+
+```bash
+cargo run
+```
+
+启动后程序会：
+
+- 初始化 SQLite 数据库
+- 自动绑定一个本地随机端口
+- 输出访问地址
+- 在支持的系统上尝试自动打开浏览器
+
+默认情况下：
+
+- macOS 数据库位置：`~/Library/Application Support/LilyNest/gallery.sqlite3`
+- 其他系统默认数据库位置：可执行文件同目录下的 `gallery.sqlite3`
+
+### 环境变量
+
+- `LILY_NEST_DB_PATH`
+  自定义 SQLite 数据库文件路径
+- `LILY_NEST_TLS_CERT`
+  TLS 证书文件路径；与 `LILY_NEST_TLS_KEY` 同时设置时启用 HTTPS
+- `LILY_NEST_TLS_KEY`
+  TLS 私钥文件路径
+
+启用 TLS 后，程序监听 `8443` 端口；未启用时监听本地随机端口。
+
+## 当前 API
+
+所有接口前缀均为 `/api/v1`。
+
+- `GET /health`
+  健康检查
+- `GET /auth/status`
+  获取登录状态和是否需要初始化口令
+- `POST /auth/setup`
+  首次设置管理员口令
+- `POST /auth/login`
+  管理员登录
+- `POST /auth/logout`
+  管理员退出
+- `GET /photos`
+  获取照片列表
+- `POST /photos`
+  上传照片，需要管理员登录
+- `PATCH /photos/{id}`
+  修改照片标题 / 描述 / 标签，需要管理员登录
+- `DELETE /photos/{id}`
+  删除照片，需要管理员登录
+- `GET /photos/{id}/content`
+  获取照片原始内容
 
 ## 项目结构
-```
+
+```text
 lily-nest/
 ├── Cargo.toml
-├── config.toml         # 站点基础配置
-├── projects.toml       # 项目列表配置
-├── src/                # Rust 源码
-│   ├── app.rs          # 应用入口与页面渲染
-│   ├── config.rs       # 配置加载
-│   ├── main.rs         # 启动入口
-│   ├── model.rs        # 数据结构
-│   └── routes/         # 路由
-│       ├── api.rs      # API 路由
+├── Cargo.lock
+├── AppIcon.png
+├── embedded/
+│   ├── app.css
+│   ├── app.js
+│   └── index.html
+├── scripts/
+│   ├── build_macos_app.sh
+│   └── build_windows_release.sh
+├── src/
+│   ├── app.rs
+│   ├── auth.rs
+│   ├── db.rs
+│   ├── main.rs
+│   ├── media.rs
+│   ├── model.rs
+│   └── routes/
+│       ├── api.rs
 │       └── mod.rs
-├── static/             # 静态资源
-│   ├── css/MD3.css     # Material 3 风格 CSS
-│   ├── js/index.js     # Index.html所需的 JS
-│   └── images/         # 图片资源
-├── templates/
-│   └── index.html      # 首页模板
-├── certs/
-│   └── example.com.pem # SSL证书
-│   └── example.com.key # SSL密钥
-└── ...
+└── static/
+    └── images/
+        └── favicon.svg
 ```
 
-## 启动方式
-1. 安装 Rust（建议最新版）
-2. 克隆本仓库并进入目录
-3. 安装依赖并运行：
-   ```bash
-   cargo run
-   ```
-4. 无证书访问 [http://[::1]:8880](http://[::1]:8880)
-5. 有证书访问 [https://[::1]:8443](https://[::1]:8443)
+### 关键模块说明
 
-## 配置说明
-- `config.toml`：站点基础信息、团队成员、关于我等
-- `projects.toml`：项目列表
-- `static/`：静态资源（图片、CSS、robots.txt等）
+- `src/main.rs`
+  启动入口、数据库路径选择、TLS 启动逻辑、自动打开浏览器
+- `src/app.rs`
+  Axum 应用组装、主页和内嵌资源路由、安全响应头
+- `src/routes/api.rs`
+  鉴权、上传、列表、编辑、删除、图片内容接口
+- `src/db.rs`
+  SQLite 初始化与数据读写
+- `src/media.rs`
+  图片缩放、透明背景铺白、JPEG 压缩
+- `embedded/`
+  当前实际生效的前端资源
 
-## 亮点与注意事项
-- 支持热加载（debug模式下每次请求自动渲染最新页面）
-- 生产环境建议用 Nginx 代理静态资源
-- 仅供个人学习/展示用途，欢迎二次开发
+## 打包
+
+### macOS App
+
+```bash
+./scripts/build_macos_app.sh
+```
+
+输出目录：
+
+```text
+dist/Lily Nest.app
+```
+
+脚本会自动：
+
+- 构建 release 二进制
+- 生成 `.app` 目录结构
+- 复制可执行文件
+- 如果存在 `AppIcon.png` 或 `AppIcon.icns`，则写入应用图标
+
+### Windows 交叉编译
+
+```bash
+./scripts/build_windows_release.sh
+```
+
+脚本依赖：
+
+- `rustup target add x86_64-pc-windows-gnu`
+- 本机安装 `mingw-w64`
+
+## 安全与使用注意
+
+- 当前管理员口令直接保存在 SQLite 的 `app_settings` 表中，不是哈希存储
+- 登录 session 只保存在进程内存中，程序重启后需要重新登录
+- 更适合本机或受信任内网环境，不建议直接作为公网生产相册服务
+- 上传请求体限制为 25 MB
+
+## 测试
+
+```bash
+cargo test
+```
+
+当前仓库内已有的单元测试会校验安全响应头是否正确写入。
 
 ## License
+
 MIT
